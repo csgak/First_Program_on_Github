@@ -1,0 +1,346 @@
+---
+title: "The_Art_of_R_Programming"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 第一章 快速入门笔记
+1. index(索引)/subscript(下标),利用[]提供索引，从1开始索引。
+2. 求余数符号 %%,与常规的%不同。
+3. 定义一个函数：函数名 <- function(输入){}
+4. for循环语法：for(条件){}
+5. if语法：if(条件){}
+6. 函数返回值：return(返回值)
+7. R语言编程的戒律之一是尽可能避免使用循环，如果不能，就让循环尽量简洁，for(n in x){n...}与for(i in 1:length(x)){x[i]}两个语句是一样的效果，但后者需要调用length()且每次都需要调用索引，因此不够简洁。
+8. R函数中的实参和形参(formal argument,formal parament)与C++类似，同时变量的作用域也可以参考C++。
+9. R函数中也可以设置默认参数，即在函数定义时给变量赋默认值，如function(x,y=2,z=TRUE){}
+
+
+
+
+
+```{r Nile}
+Nile#内置的数据集，包含尼罗河水流量的数据
+mean(Nile)#计算均值
+sd(Nile)#计算标准差
+hist(Nile)#绘制直方图
+hist(Nile,breaks = 12)#可以通过设置break改变分组
+```
+```{r }
+#函数入门，函数是一组指令的集合，用于读取输入、执行计算、返回结果
+oddcounter <- function(x){ #定义一个函数：函数名 <- function(输入)
+  counter <- 0 #定义一个返回变量
+  for (i in x){#for循环语法：for(条件){}
+    if(i%%2 == 1){#if语法：if(条件){}
+      counter <- counter + 1
+    }
+  }
+  return(counter)#返回值
+}
+oddcounter(c(1,3,5,2,5,4,4,8))
+y <- c(1,3,5,2,5,4,5,8)
+oddcounter(y)
+```
+# 第二章 向量(vector)
+本章会重点关注*循环补齐*、*筛选*、*向量化*
+1. 在R中，数字实际上被当作一元向量。
+2. R语言中变量类型称为模式(mode),同一向量中的所有元素必须是相同的模式。
+3. R中向量是连续存储的(与C语言类似)，因此不能插入或删除元素，只能重新给向量进行赋值。*R中的向量名本质上是一个指针，重赋值是将指针指向新向量的方式实现的*。
+4. length()获取向量长度，*当向量为空时，length()返回0，1:length()会返回1:0，用seq()替代1：length()可以避免*。
+5. 矩阵为按列存储的向量。
+6. 循环补齐，当两个向量运算时，R会自动对长度较短的向量进行重复补齐，确保运算的两个向量长度一样。
+7. 常用的向量运算，通常是元素和元素的运算，不是线性代数中的向量运算，尤其是乘法(*)。
+8. 向量索引，选择特定索引的元素构成新的子向量，-代表剔除某几个元素。
+9. **运算符存在优先级，与C类似，例如：的优先级高于-,1:k-1实际等价于(1:k)-1而不是1:(k-1)。**
+10. seq(from = , to = , by = )生成等差数列。
+11. rep(x,times,lenth,each)，times可以为单个值或与x长度相同的整数向量，当times为单个值时即将整个x作为整体进行重复，当times为length(x)的整数向量时x[i]将会被重复times[i]次；each = k 等价于 times = rep(k,length(x))，即每个元素都重复了k次。
+12. any(),all()分别为其中至少一个或全部为TRUE，*可以提高判断效率*。
+13. 向量化运算符，当希望对向量中的每一个元素都进行相同操作时，希望直接对x调用f(),既简化代码又能利用R的向量化提高执行效率。
+13-1. 向量输入向量输出，之前接触的+,-,*,/,%%,^,>,<均为此类向量化运算；
+13-2. 向量输入矩阵输出，sapply(x,f)--simplify apply 对每一个x中的元素都调用f，并将结果转化为矩阵。
+14. NA为缺失值(可以通过na.rm=TRUE忽略NA值)，NULL为不存在的值(用于在循环中创建向量作为指针初始存放地点)。
+15. 筛选(filtering)
+15-1. 用x[逻辑表达式],无法剔除NA值;
+15-2. 用subset(x,逻辑表达式),可以剔除NA值;
+15-3. which(逻辑表达式)，返回为所有TRUE的元素索引。
+16. 向量化的ifelse(b,u,v)，若逻辑表达式b中元素为TRUE时对应位置返回u，若b中元素判断为FALSE对应位置返回v。
+17. 测试向量相等，==为一个向量化符号即对每个元素都进行判断是否相等，因此无法用于两个向量之间是否相同的判断，可以利用all(x==y)，但效率上不如identical(x,y)。*注意：identical()要求两个对象完全一致，即使数值一样但两个类型不同也不可以，1:2 不等于 c(1,2),因为c(1,2)为double类型，1:2为int*
+
+
+```{r}
+#3 插入需要重新赋值
+x <- c(88,5,12,13)
+x
+x <- c(x[1:3],168,x[4]);x
+
+#3 删除也需要重新赋值
+x <- c(x[1:3],x[5]);x
+
+#6-1 循环运算
+x <- c(1,2,4) + c(6,0,9,20,22);x
+#6-2 循环运算,矩阵实际为向量，将c(1,2)循环补充，并转为矩阵形式mat(c(1,2,1,2,1,2),nrow = nrow(x), ncol = ncol(x)),然后再与x的每个元素进行计算。
+x <- matrix(1:6, nrow = 3, ncol = 2);x
+y <- x + c(1,2);y
+nrow(x)
+
+#7 向量运算
+x <- c(1,2,4)
+x + c(5,0,-1)
+x * c(5,0,-1) #此处的*为元素之间运算
+x / c(5,4,-1) #此处的/为元素之间运算
+x %% c(5,4,-1) #依旧为元素之间运算
+
+#8 向量索引
+y <- 1:9 -0.3;y
+y[1:3]
+y[c(1,1,2)]#可以重复某个元素
+y[-1]#剔除第一个元素
+y[-c(1,2)]#剔除 1，2两个元素
+y[-length(y)]#剔除最后一个元素
+
+#9 运算符的优先级
+1:3-1#:的优先级高于-，所以为(1:3)-1
+1:(3-1)#等价于1:2，与上式不同
+
+#10 seq(from , to, by ) 生成等差数列，鲁棒性较好(seq(NULL)记为0 比1：length(x)可避免1:0的情况——先执行1，但实际是要求不执行，此处也是C语言等从0开始索引可以避免的一个问题)
+seq(from=1, to=4 , by=0.2)
+seq(NULL)
+
+#11 rep(x, times, length, each),对x中的第i个元素重复times[i]次
+rep(x=c(1,2,3),times=3)#当times为1元向量时，则rep将x也当作一个单独的向量元素来进行重复
+rep(x=c(1,2,3),times=3,length=5)#length为截至长度
+rep(x=c(1,2,3),times=c(3,3,3))
+rep(x=c(1,2,3),each=3)#each 是对每个元素都进行重复，与上一个表达式效果相同
+
+#11 any(x),all(x)判断x包含的TRUE情况
+x <- 1:9-0.6
+any(x>6)
+all(x>6)
+seq(x)-2
+seq(x-2)
+1:(length(x)-2)
+
+findrun<- function(x,k,m){
+  #找出连续k个值均为m的编号
+  #rlt <- NULL #构建存储结果的向量,方便但是每次都需要重新为c(rlt,i)分配一次内存比较影响速度
+  n <- length(x)
+  rlt <- vector(length = n)
+  count <- 1
+  for(i in 1:(n-k+1)){
+    #if(all(x[i:i+k-1]==m)) {rlt<- c(rlt,i)}
+    if(all(x[i:(i+k-1)]==m)) {
+      
+      rlt[count] <- i
+      count <- count + 1}
+  }
+  return(rlt)
+}
+x <- rep(x=c(1,3,2),length=8,each=3);x
+findrun(x,4,2)
+findrun(c(1,1, 1, 3, 3, 3, 2, 2),3,2)
+
+
+#15 筛选，x[逻辑表达式],subset(x,逻辑表达式)
+x <- c(6,1:3,NA,12)
+x[x>5]
+subset(x,x>5)
+#which(逻辑表达式),返回符合逻辑表达式的元素的索引
+which(x>5)
+
+#16 向量化的ifelse(b,u,v)
+x <- 1:10
+y <- ifelse(x%%2==1,"Yes","No")
+y
+
+#17 identical(x,y)判断向量x和向量y是否相同
+x <- c(1,2,3)
+x_1 <- c(1,NA,3)
+y <- c(1,NA,3)
+x == y
+all(x==y)#当存在NA值是all返回的均为NA(不管两个向量是否一致)
+all(x_1 ==y )#当存在NA值是all返回的均为NA(不管两个向量是否一致)
+all(x==y,na.rm = T)#只有设置na.rm=T才可以忽略NA值，对其他元素进行判读
+identical(x,y)
+identical(x_1,y)#可以对NA与NA进行比较
+```
+
+# 第三章 矩阵和数组
+1. *矩阵(matrix)*是一种特殊的向量，包含两个附加的属性(行数和列数)，其余属性与一般的向量一致。
+2. *数组(array)*是R中更一般的对象，可以是多维的，矩阵为数组的一个特殊形式。
+3-1. 矩阵创建，在R中矩阵按列存储，行和列的下标均从1开始，创建方法可matrix(c(),nrow=,ncol=);
+3-2. 如果需要按行存储，可以设置byrow=T；
+3-3. y[,col]代表索引第col列的数据；
+4. 矩阵的线性代数运算，矩阵相乘、矩阵数量乘法、矩阵相加。
+5. 矩阵索引与向量索引方法一致，只是多了按行索引和按列索引。
+6. &运算符为向量的逻辑与运算，&&运算符用于if语句的标量逻辑与运算。
+7. row(m)，返回一个大小与m一致的矩阵，对应位置的值为该值在m中的行数；col(m)类似。
+8. apply(m, dimcode, f, fargs),允许用户在矩阵的各行或各列上调用指定的函数。*apply()这类函数并不会加速程序，但便于阅读和修改，并且避免产生使用循环语句可能带来的bug，同时也是应用方向，可以分配到多个网络节点计算。*
+9. 增加或删除矩阵的行或列，可以通过重新赋值的方式实现。增加行或列也可以调用rbind(),cbind()，*但相当于重新创建一个矩阵，速度较慢，最好是先创建一个大的空矩阵*。
+10. matrix 相比于vector多了行数和列数的属性(dim)。
+11. 避免意外降维(对矩阵操作返回了长度为N的向量而不是1×N的矩阵或N×1的矩阵)，可以通过设置drop=False来避免降维。
+12. 矩阵的行和列的命名，colnames(matrix) <- c()
+
+```{r}
+#3-1 创建矩阵，默认按列存储  
+y <- matrix(data = c(1,2,3,4),nrow = 2);y
+#3-2 特定要求按行存储矩阵
+y <- matrix(data = c(1,2,3,4), nrow = 2, byrow = TRUE);y
+#3-3 取某一列或某一行的数据y[row,] y[,col]
+y[,1];y[1,]
+
+#4 矩阵线性代数运算
+y <- matrix(data = c(1,2,3,4),nrow = 2);y
+#4-1 矩阵相乘
+y %*% y
+#4-2 矩阵乘量乘法
+3*y
+#4-3 矩阵加法
+y+y
+
+#5 矩阵操作实例
+library(pixmap)
+logo <- read.pnm("C:/Users/wangjk/Documents/R/win-library/3.3/pixmap/pictures/logo.pgm")
+plot(logo)
+str(logo)
+#logo@grey灰度矩阵
+class(logo@grey)
+logo_1 <- logo
+logo_1@grey[40:50,20:30] <- 1
+plot(logo_1)
+logo_2 <- logo
+logo_2@grey[40:50,] <- 1
+plot(logo_2)
+
+rows <- 84:163;cols <- 135:177
+lrows <- length(rows);lcols <- length(cols)
+randomnoise <- matrix(nrow = lrows,ncol = lcols, runif(lrows*lcols))
+logo_3 <- logo
+#logo_3@grey <- 0.3*logo@grey + 0.7*randomnoise
+
+#6 &与运算
+m <- matrix(c(5,2,9,-1,10,11),nrow = 3);m
+m[m[,1]>2&m[,2]<2,]
+
+#7 row() 和 col()函数使用
+m;row(m)
+col(m)
+col(m) == row(m)
+ifelse(row(m) == col(m), 1, -1)
+
+#8 apply(m, dimcode, f, fargs),允许用户在矩阵的各行或各列上调用指定的函数
+
+#8-1 利用mean()和apply()
+z <- matrix(1:6, nrow = 3);z
+apply(z, 1, mean) #按行dimcode=1 求平均值
+apply(z, 1, min)  #按行求最小值
+apply(z, 2, mean) # 按列求平均值
+# f()返回的为标量(单元素向量)，apply()的结果为一个向量*而非矩阵*
+
+#8-2 自定义函数f
+f <- function(x) x/c(2,8) #每行都除c(2,8)
+y <- apply(z, 1, f);y  #y为一个2×3的矩阵，由于apply()在计算时先把第一行的结果输出为结果中的第一列。如果所调用的f返回的是一个包含k个元素的向量，那么apply()的结果就有k行。
+y <- t(apply(z, 1, f));y #t()为转置函数
+
+#8-3 apply()的f()包含多个变量时，需要在apply()调用时将额外的参数列在函数名字后面，用逗号隔开。
+copymaj <- function(rw, d){
+  maj <- sum(rw[1:d]) / d
+  return(ifelse(maj > 0.5, 1, 0))
+}
+x <- matrix(c(1,1,1,0,0,1,0,1,1,1,0,1,1,1,1,1,0,0,1,0),nrow = 4);x
+apply(x, 1, copymaj, 3)
+
+#8-4 找出每行中距离中位数最大的值findol,常用于异常值判断
+rs <- matrix(runif(15,0,3),nrow = 3);rs
+findol <- function(xrow){
+  mdn <- median(xrow)
+  devs <- abs(xrow - mdn)
+  return(which.max(devs))
+}
+apply(rs, 1, findol)
+
+#9 利用rbind(),cbind()
+z
+cbind(1,z)
+rbind(1,z)
+
+#9-2 找出最短距离
+mind <- function(d){
+  n <- nrow(d)
+  dd <- cbind(d,1:n)
+  wmins <- apply(dd[-n,], 1, imin)
+  
+  i <- which.min(wmins[2,])
+  j <- wmins[1,i]
+  
+  return(c(d[i,j],i,j))
+  
+}
+
+imin <- function(x){
+  lx <- length(x)
+  i <- x[lx]#原矩阵的行数
+  j <- which.min(x[(i+1):(lx-1)])#对称矩阵，且对角线元素为0，需要排除0的影响
+  return(c(i+j,x[i+j]))
+}
+
+q <- matrix(nrow = 5, ncol = 5)
+q[1,] <- c(0,12,13,8,20)
+q[2,] <- c(12,0,15,28,88)
+q[3,] <- c(13,15,0,6,9)
+q[4,] <- c(8,28,6,0,33)
+q[5,] <- c(20,88,9,33,0)
+q
+mind(q)
+
+#10 矩阵与向量的区别
+z <- matrix(1:8, nrow = 4)
+length(z)#向量可以调用length()
+class(z)
+attributes(z)#因此为S3类，行数和列数作为matrix 的属性可以直接用nrow()和ncol()读取，或者dim(z)但不可以z$dim
+dim(z)
+
+#11 避免意外降维
+rz <- z[1,] 
+class(rz)
+attributes(rz)#rz 为一个向量
+rzdrop <- z[1,,drop=FALSE];attributes(rzdrop)#返回矩阵1×2
+#也可以通过as.matrix将其转为矩阵，按照向量转矩阵的方式按列转换
+rz <- z[1,];rz;rz <- as.matrix(rz,nrow=1,ncol=2);rz<-t(rz);attributes(rz)
+rz <- as.matrix(rz);attributes(rz)#
+
+#12 矩阵行和列的命名
+colnames(z) <- c("a","b")
+rownames(z) <- c("11","12","13","14")
+z[c("11","12"),"a"]
+```
+#4 列表(list)
+从技术上讲，列表就是向量，属于递归型(recursive)向量。
+1. 创建列表,列表各组件的名称叫做标签(tag) ;也可以用vector(mode="list")创建列表。
+2. 列表常规操作
+2-1 列表索引，第一类采用*$或者[[数字/tag]]*，返回的是组件tag的数据类型；第二种*[tag]*，返回的是原列表的子列表
+2-2 增加或删除列表元素,增加直接lst$addele <- ,删除lst$deltar <- NULL，多个list也可以用c()进行连接。
+2-3 获取列表长度，即获取组件个数
+
+```{r}
+#1 创建列表
+j <- list(name="Joe", salary=55000, union=T)
+j$name;j$sal;j$un#tag可以简写
+#2-1 列表索引
+z <- vector(mode = "list");z[["abc"]] <- 3;z
+j[['name']];j[[1]];class(j[[1]])##[[]]返回name值对应的数据类型
+j[1];class(j[1])#[]返回原列表中的第i个子列表
+
+#2-2 增加或删除列表元素，增加直接lst$addele <- ,删除lst$deltar <- NULL
+j$age <- 34;j[[5]]<-25000;j#增加元素
+j[[5]] <- NULL;j#删除第5各元素
+
+#2-3 获取组件个数
+length(j)
+```
+
+
+
+
